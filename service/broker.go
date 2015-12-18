@@ -117,9 +117,9 @@ func dbservicebroker(catalog ds.Catalog, service_broker_id int64) (err error) {
 			service_id, err := r.LastInsertId()
 			for _, plan := range s.Plans {
 				if _, err = db.Exec(`INSERT INTO service_plans
-						(guid,name,description,free,service_id)
-						VALUES(?,?,?,?,?)`,
-					plan.Id, plan.Name, plan.Description, plan.Free, service_id); err != nil {
+						(guid,name,description,free,service_id,unique_id)
+						VALUES(?,?,?,?,?,?)`,
+					plan.Id, plan.Name, plan.Description, plan.Free, service_id, plan.Id); err != nil {
 					log.Error("INSERT INTO service_plans", err)
 				}
 			}
