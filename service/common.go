@@ -39,17 +39,11 @@ func commToServiceBroker(method, path string, jsonData []byte, header map[string
 }
 
 func initDB() {
-	DB_ADDR := os.Getenv("MYSQL_PORT_3306_TCP_ADDR")
-	DB_PORT := os.Getenv("MYSQL_PORT_3306_TCP_PORT")
-	DB_DATABASE := os.Getenv("MYSQL_ENV_MYSQL_DATABASE")
-	DB_USER := os.Getenv("MYSQL_ENV_MYSQL_USER")
-	DB_PASSWORD := os.Getenv("MYSQL_ENV_MYSQL_PASSWORD")
-
-	DB_ADDR = "127.0.0.1"
-	DB_PORT = "3306"
-	DB_USER = "root"
-	DB_PASSWORD = "zxcvbnm"
-	DB_DATABASE = "datafactory"
+	DB_ADDR := os.Getenv("MYSQL_ENV_TCP_ADDR")
+	DB_PORT := os.Getenv("MYSQL_ENV_TCP_PORT")
+	DB_DATABASE := os.Getenv("MYSQL_ENV_DATABASE")
+	DB_USER := os.Getenv("MYSQL_ENV_USER")
+	DB_PASSWORD := os.Getenv("MYSQL_ENV_PASSWORD")
 
 	//DB_URL := fmt.Sprintf(`%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=true`, DB_USER, DB_PASSWORD, DB_ADDR, DB_PORT, DB_DATABASE)
 	DB_URL := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", DB_USER, DB_PASSWORD, DB_ADDR, DB_PORT, DB_DATABASE)
