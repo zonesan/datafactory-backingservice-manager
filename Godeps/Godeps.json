@@ -1,0 +1,25 @@
+{
+	"ImportPath": "github.com/asiainfoLDP/datafactory-backingservice-manager",
+	"GoVersion": "go1.5",
+	"Deps": [
+		{
+			"ImportPath": "github.com/asiainfoLDP/datahub/utils/clog",
+			"Comment": "v0.6-26-ga2607bd",
+			"Rev": "a2607bde669b8685b01d309db6fb38992697789c"
+		},
+		{
+			"ImportPath": "github.com/go-sql-driver/mysql",
+			"Comment": "v1.2-125-gd512f20",
+			"Rev": "d512f204a577a4ab037a1816604c48c9c13210be"
+		},
+		{
+			"ImportPath": "github.com/julienschmidt/httprouter",
+			"Comment": "v1.1-10-g77a895a",
+			"Rev": "77a895ad01ebc98a4dc95d8355bc825ce80a56f6"
+		},
+		{
+			"ImportPath": "github.com/satori/go.uuid",
+			"Rev": "d41af8bb6a7704f00bc3b7cba9355ae6a5a80048"
+		}
+	]
+}
