@@ -13,6 +13,7 @@ import (
 
 var (
 	SERVICE_BROKER_API_SERVER string
+	SERVICE_BROKER_API_PORT   string
 	database                  = new(SqlHandler)
 )
 
@@ -111,8 +112,10 @@ func insert(db *sql.DB) {
 
 func init() {
 	SERVICE_BROKER_API_SERVER = os.Getenv("SERVICE_BROKER_API_SERVER")
+	SERVICE_BROKER_API_PORT = os.Getenv("SERVICE_BROKER_API_PORT")
 
-	SERVICE_BROKER_API_SERVER = "http://localhost:8001"
+	SERVICE_BROKER_API_SERVER = "http://" + SERVICE_BROKER_API_SERVER + ":" + SERVICE_BROKER_API_PORT
+	log.Info("service broker conn:", SERVICE_BROKER_API_SERVER)
 
 	initDB()
 }
