@@ -2,7 +2,7 @@ package service
 
 import (
 	"encoding/json"
-	"github.com/asiainfoLDP/datafactory-backendservice-manager/ds"
+	"github.com/asiainfoLDP/datafactory-backingservice-manager/ds"
 	log "github.com/asiainfoLDP/datahub/utils/clog"
 	"github.com/julienschmidt/httprouter"
 	uuid "github.com/satori/go.uuid"

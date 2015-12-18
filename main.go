@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/asiainfoLDP/datafactory-backendservice-manager/service"
+	"github.com/asiainfoLDP/datafactory-backingservice-manager/service"
 	log "github.com/asiainfoLDP/datahub/utils/clog"
 )
 

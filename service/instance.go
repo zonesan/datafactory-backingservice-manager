@@ -3,7 +3,7 @@ package service
 import (
 	"database/sql"
 	"encoding/json"
-	"github.com/asiainfoLDP/datafactory-backendservice-manager/ds"
+	"github.com/asiainfoLDP/datafactory-backingservice-manager/ds"
 	log "github.com/asiainfoLDP/datahub/utils/clog"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/julienschmidt/httprouter"
