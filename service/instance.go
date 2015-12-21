@@ -2,6 +2,7 @@ package service
 
 import (
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"github.com/asiainfoLDP/datafactory-backingservice-manager/ds"
 	log "github.com/asiainfoLDP/datahub/utils/clog"
@@ -88,22 +89,88 @@ func ServiceInstancesPostHandler(rw http.ResponseWriter, req *http.Request, ps h
 	return
 }
 
+/*
 func dbserviceinstance(si *ds.BackingServiceInstance) (guid, t string, err error) {
 	db := getDB()
 	guid = uuid.NewV4().String()
 	t = time.Now().Format("2006-01-02T15:04:05") //time.Now().Format(time.RFC3339)
 
-	var service_plan_id string
-	err = db.QueryRow("SELECT id FROM service_plans WHERE guid=?", si.Service_plan_guid).Scan(&service_plan_id)
+	var service_plan_id, service_id, service_broker_id, service_guid, servicebroker_guid, username, passwd string
+	err = db.QueryRow("SELECT id, service_id FROM service_plans WHERE guid=?", si.Service_plan_guid).Scan(&service_plan_id, &service_id)
 	switch {
 	case err == sql.ErrNoRows:
 		log.Error("No service_plan_id with that Service_plan_guid.", err)
 	case err != nil:
 		log.Fatal(err)
 	default:
-		if _, err = db.Exec(`INSERT INTO service_instances
+		log.Debugf("service_id %s service_plan_id %s", service_id, service_plan_id)
+
+		err = db.QueryRow("SELECT guid, service_broker_id FROM services WHERE id=?", service_id).Scan(&service_guid, &service_broker_id)
+		switch {
+		case err == sql.ErrNoRows:
+			log.Error("No service_broker_id with that service_id.", err)
+		case err != nil:
+			log.Fatal(err)
+		default:
+			log.Debugf("service_guid %s, service_broker_id %s", service_guid, service_broker_id)
+
+			err = db.QueryRow("SELECT guid, auth_username,auth_password FROM service_brokers WHERE id=?", service_broker_id).Scan(&servicebroker_guid, &username, &passwd)
+			switch {
+			case err == sql.ErrNoRows:
+				log.Error("No service_broker_id with that service_id.", err)
+			case err != nil:
+				log.Fatal(err)
+			default:
+				log.Debugf("servicebroker_guid %s username %s passwd %s", servicebroker_guid, username, passwd)
+
+				if _, err = db.Exec(`INSERT INTO service_instances
 			(guid,created_at,name,service_plan_id,tags) VALUES(?,?,?,?,?)`,
-			guid, t, si.Name, service_plan_id, strings.Join(si.Tags, ", ")); err != nil {
+					guid, t, si.Name, service_plan_id, strings.Join(si.Tags, ", ")); err != nil {
+					log.Error("INSERT INTO service_instances error:", err)
+
+				}
+			}
+		}
+	}
+
+	return
+
+}
+*/
+func dbserviceinstance(si *ds.BackingServiceInstance) (guid, t string, err error) {
+	db := getDB()
+	guid = uuid.NewV4().String()
+	t = time.Now().Format("2006-01-02T15:04:05") //time.Now().Format(time.RFC3339)
+
+	var service_plan_id, service_id, service_broker_id, service_guid, servicebroker_guid, username, passwd string
+	err = db.QueryRow("SELECT id, service_id FROM service_plans WHERE guid=?", si.Service_plan_guid).Scan(&service_plan_id, &service_id)
+	checkSqlErr(err)
+	log.Debugf("service_id %s service_plan_id %s", service_id, service_plan_id)
+
+	err = db.QueryRow("SELECT guid, service_broker_id FROM services WHERE id=?", service_id).Scan(&service_guid, &service_broker_id)
+	checkSqlErr(err)
+
+	log.Debugf("service_guid %s, service_broker_id %s", service_guid, service_broker_id)
+
+	err = db.QueryRow("SELECT guid, auth_username,auth_password FROM service_brokers WHERE id=?", service_broker_id).Scan(&servicebroker_guid, &username, &passwd)
+	checkSqlErr(err)
+	log.Debugf("servicebroker_guid %s username %s passwd %s", servicebroker_guid, username, passwd)
+
+	param := &ds.SBServiceInstance{
+		ServiceId:        service_guid,
+		PlanId:           si.Service_plan_guid,
+		OrganizationGuid: servicebroker_guid,
+		SpaceGuid:        si.Space_guid,
+	}
+
+	if svcinstance, err := servicebroker_create_instance(param, guid, username, passwd); err != nil {
+		return guid, t, err
+
+	} else {
+
+		if _, err = db.Exec(`INSERT INTO service_instances
+			(guid,created_at,name,service_plan_id,dashboard_url,tags) VALUES(?,?,?,?,?,?)`,
+			guid, t, si.Name, service_plan_id, svcinstance.DashboardUrl, strings.Join(si.Tags, ", ")); err != nil {
 			log.Error("INSERT INTO service_instances error:", err)
 
 		}
@@ -111,4 +178,56 @@ func dbserviceinstance(si *ds.BackingServiceInstance) (guid, t string, err error
 
 	return
 
+}
+
+func servicebroker_create_instance(param *ds.SBServiceInstance, instance_guid, username, password string) (*ds.CreateServiceInstanceResponse, error) {
+	jsonData, err := json.Marshal(param)
+	if err != nil {
+		return nil, err
+	}
+
+	header := make(map[string]string)
+	header["Content-Type"] = "application/json"
+	header["Authorization"] = basicAuthStr(username, password)
+
+	resp, err := commToServiceBroker("PUT", "/v2/service_instances/"+instance_guid, jsonData, header)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	svcinstance := &ds.CreateServiceInstanceResponse{}
+
+	log.Infof("%v,%+v", string(body), svcinstance)
+	err = json.Unmarshal(body, svcinstance)
+
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	log.Infof("%v,%+v", string(body), svcinstance)
+
+	return svcinstance, nil
+}
+
+func checkSqlErr(err error) {
+	switch {
+	case err == sql.ErrNoRows:
+		log.Error("No such rows:", err)
+	case err != nil:
+		log.Fatal(err)
+	}
+}
+
+func basicAuthStr(username, password string) string {
+	auth := username + ":" + password
+	authstr := base64.StdEncoding.EncodeToString([]byte(auth))
+	return "Basic " + authstr
 }

@@ -180,3 +180,12 @@ type ServicePlan struct {
 	Metadata    interface{} `json:"metadata, omitempty"`
 	Free        bool        `json:"free, omitempty"`
 }
+
+type SBServiceInstance struct {
+	ServiceId        string `json:"service_id"`
+	PlanId           string `json:"plan_id"`
+	OrganizationGuid string `json:"organization_guid"`
+	SpaceGuid        string `json:"space_guid"`
+	//Incomplete       bool        `json:"accepts_incomplete, omitempty"`
+	Parameters interface{} `json:"parameters, omitempty"`
+}
