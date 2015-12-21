@@ -197,6 +197,8 @@ func servicebroker_create_instance(param *ds.SBServiceInstance, instance_guid, u
 	}
 	defer resp.Body.Close()
 
+	log.Debugf("respcode from /v2/service_instances/%s: %v", instance_guid, resp.StatusCode)
+
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Error(err)
