@@ -72,7 +72,7 @@ type BackingServiceBinding struct {
 type EntitySBind struct {
 	Service_instance_guid string      `json:"service_instance_guid"`
 	App_guid              string      `json:"app_guid"`
-	Credentials           interface{} `json:"credentials"`
+	Credentials           Credential  `json:"credentials"`
 	Binding_options       interface{} `json:"binding_options"`
 	Gateway_data          interface{} `json:"gateway_data"`
 	Gateway_name          string      `json:"gateway_name"`
@@ -107,12 +107,12 @@ type Catalog struct {
 }
 
 type ServiceBinding struct {
-	Id                string `json:"id"`
-	ServiceId         string `json:"service_id"`
-	AppId             string `json:"app_id"`
-	ServicePlanId     string `json:"service_plan_id"`
-	PrivateKey        string `json:"private_key"`
-	ServiceInstanceId string `json:"service_instance_id"`
+	Id                string `json:"id,omitempty"`
+	ServiceId         string `json:"service_id,omitempty"`
+	AppId             string `json:"app_id,omitempty"`
+	ServicePlanId     string `json:"service_plan_id,omitempty"`
+	PrivateKey        string `json:"private_key,omitempty"`
+	ServiceInstanceId string `json:"service_instance_id,omitempty"`
 }
 
 type CreateServiceBindingResponse struct {

@@ -142,7 +142,17 @@ func dbserviceinstance(si *ds.BackingServiceInstance) (guid, t string, err error
 	guid = uuid.NewV4().String()
 	t = time.Now().Format("2006-01-02T15:04:05") //time.Now().Format(time.RFC3339)
 
-	var service_plan_id, service_id, service_broker_id, service_guid, servicebroker_guid, username, passwd string
+	var (
+		service_plan_id    string
+		service_id         string
+		service_broker_id  string
+		service_guid       string
+		servicebroker_guid string
+		broker_url         string
+		username           string
+		passwd             string
+	)
+
 	err = db.QueryRow("SELECT id, service_id FROM service_plans WHERE guid=?", si.Service_plan_guid).Scan(&service_plan_id, &service_id)
 	checkSqlErr(err)
 	log.Debugf("service_id %s service_plan_id %s", service_id, service_plan_id)
@@ -152,7 +162,7 @@ func dbserviceinstance(si *ds.BackingServiceInstance) (guid, t string, err error
 
 	log.Debugf("service_guid %s, service_broker_id %s", service_guid, service_broker_id)
 
-	err = db.QueryRow("SELECT guid, auth_username,auth_password FROM service_brokers WHERE id=?", service_broker_id).Scan(&servicebroker_guid, &username, &passwd)
+	err = db.QueryRow("SELECT guid, broker_url, auth_username,auth_password FROM service_brokers WHERE id=?", service_broker_id).Scan(&servicebroker_guid, &broker_url, &username, &passwd)
 	checkSqlErr(err)
 	log.Debugf("servicebroker_guid %s username %s passwd %s", servicebroker_guid, username, passwd)
 
@@ -163,7 +173,7 @@ func dbserviceinstance(si *ds.BackingServiceInstance) (guid, t string, err error
 		SpaceGuid:        si.Space_guid,
 	}
 
-	if svcinstance, err := servicebroker_create_instance(param, guid, username, passwd); err != nil {
+	if svcinstance, err := servicebroker_create_instance(param, guid, broker_url, username, passwd); err != nil {
 		return guid, t, err
 
 	} else {
@@ -176,11 +186,11 @@ func dbserviceinstance(si *ds.BackingServiceInstance) (guid, t string, err error
 		}
 	}
 
-	return
+	return guid, t, nil
 
 }
 
-func servicebroker_create_instance(param *ds.SBServiceInstance, instance_guid, username, password string) (*ds.CreateServiceInstanceResponse, error) {
+func servicebroker_create_instance(param *ds.SBServiceInstance, instance_guid, broker_url, username, password string) (*ds.CreateServiceInstanceResponse, error) {
 	jsonData, err := json.Marshal(param)
 	if err != nil {
 		return nil, err
@@ -190,7 +200,7 @@ func servicebroker_create_instance(param *ds.SBServiceInstance, instance_guid, u
 	header["Content-Type"] = "application/json"
 	header["Authorization"] = basicAuthStr(username, password)
 
-	resp, err := commToServiceBroker("PUT", "/v2/service_instances/"+instance_guid, jsonData, header)
+	resp, err := commToServiceBroker("PUT", broker_url+"/v2/service_instances/"+instance_guid, jsonData, header)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -207,11 +217,15 @@ func servicebroker_create_instance(param *ds.SBServiceInstance, instance_guid, u
 	svcinstance := &ds.CreateServiceInstanceResponse{}
 
 	log.Infof("%v,%+v", string(body), svcinstance)
-	err = json.Unmarshal(body, svcinstance)
+	if resp.StatusCode == http.StatusOK {
+		if len(body) > 0 {
+			err = json.Unmarshal(body, svcinstance)
 
-	if err != nil {
-		log.Error(err)
-		return nil, err
+			if err != nil {
+				log.Error(err)
+				return nil, err
+			}
+		}
 	}
 
 	log.Infof("%v,%+v", string(body), svcinstance)

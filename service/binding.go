@@ -1,11 +1,9 @@
 package service
 
 import (
-	"database/sql"
 	"encoding/json"
 	"github.com/asiainfoLDP/datafactory-backingservice-manager/ds"
 	log "github.com/asiainfoLDP/datahub/utils/clog"
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/julienschmidt/httprouter"
 	uuid "github.com/satori/go.uuid"
 	"io/ioutil"
@@ -36,11 +34,12 @@ func ServiceBindingsPostHandler(rw http.ResponseWriter, req *http.Request, ps ht
 		return
 	}
 
-	guid, t, err := dbservicebinding(&sbind)
+	guid, t, cred, err := dbservicebinding(&sbind)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
+	log.Warn(cred)
 
 	sbindresp := &ds.Response{
 		Metadata: ds.Metadata{
@@ -52,6 +51,7 @@ func ServiceBindingsPostHandler(rw http.ResponseWriter, req *http.Request, ps ht
 		Entity: ds.EntitySBind{
 			App_guid:              sbind.App_guid,
 			Service_instance_guid: sbind.Service_instance_guid,
+			Credentials:           *cred,
 			App_url:               "/v2/apps/" + sbind.App_guid,
 			Service_instance_url:  "/v2/user_provided_service_instances/" + sbind.Service_instance_guid,
 		},
@@ -69,6 +69,90 @@ func ServiceBindingsPostHandler(rw http.ResponseWriter, req *http.Request, ps ht
 	return
 }
 
+func dbservicebinding(sb *ds.BackingServiceBinding) (guid, t string, cred *ds.Credential, err error) {
+	db := getDB()
+	guid = uuid.NewV4().String()
+	t = time.Now().Format("2006-01-02T15:04:05") //time.Now().Format(time.RFC3339)
+
+	var (
+		service_instance_id string
+		service_plan_id     string
+		service_plan_guid   string
+		service_id          string
+		service_guid        string
+		service_broker_id   string
+		broker_url          string
+		username            string
+		password            string
+	)
+	err = db.QueryRow("SELECT id, service_plan_id FROM service_instances WHERE guid=?", sb.Service_instance_guid).Scan(&service_instance_id, &service_plan_id)
+	checkSqlErr(err)
+	log.Debug("service_instance_id %s service_plan_id %s", service_instance_id, service_plan_id)
+
+	err = db.QueryRow("SELECT service_id, guid FROM service_plans WHERE id=?", service_plan_id).Scan(&service_id, &service_plan_guid)
+	checkSqlErr(err)
+	log.Debugf("service_id %s service_plan_guid %s", service_id, service_plan_guid)
+
+	err = db.QueryRow("SELECT guid ,service_broker_id FROM services WHERE id=?", service_id).Scan(&service_guid, &service_broker_id)
+	checkSqlErr(err)
+	log.Debugf("service_guid %s", service_guid)
+
+	err = db.QueryRow("SELECT broker_url,auth_username,auth_password FROM service_brokers WHERE id=?", service_broker_id).Scan(&broker_url, &username, &password)
+	checkSqlErr(err)
+	log.Debugf("broker_url %s  username %s password %s", broker_url, username, password)
+
+	binding := &ds.ServiceBinding{
+		ServiceId:     service_guid,
+		AppId:         sb.App_guid,
+		ServicePlanId: service_plan_guid,
+	}
+
+	jsonData, err := json.Marshal(binding)
+	if err != nil {
+		return guid, t, nil, err
+	}
+
+	header := make(map[string]string)
+	header["Content-Type"] = "application/json"
+	header["Authorization"] = basicAuthStr(username, password)
+
+	resp, err := commToServiceBroker("PUT", broker_url+"/v2/service_instances/"+sb.Service_instance_guid+"/service_bindings/"+guid, jsonData, header)
+	if err != nil {
+		log.Error(err)
+		return guid, t, nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Error(err)
+		return guid, t, nil, err
+	}
+
+	cred = &ds.Credential{}
+
+	if len(body) > 0 {
+		err = json.Unmarshal(body, cred)
+
+		if err != nil {
+			log.Error(err)
+			return guid, t, nil, err
+		}
+	}
+
+	log.Debug(string(body), cred)
+
+	if _, err = db.Exec(`INSERT INTO service_bindings
+			(guid,created_at,service_instance_id,app_id,credentials) VALUES(?,?,?,?,?)`,
+		guid, t, service_instance_id, sb.App_guid, string(body)); err != nil {
+		log.Error("INSERT INTO service_bindings error:", err)
+
+	}
+
+	return guid, t, cred, nil
+}
+
+/*
 func dbservicebinding(sb *ds.BackingServiceBinding) (guid, t string, err error) {
 	db := getDB()
 	guid = uuid.NewV4().String()
@@ -93,3 +177,4 @@ func dbservicebinding(sb *ds.BackingServiceBinding) (guid, t string, err error) 
 
 	return
 }
+*/

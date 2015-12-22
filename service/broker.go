@@ -39,10 +39,14 @@ func ServiceBrokerPostHandler(rw http.ResponseWriter, req *http.Request, ps http
 		return
 	}
 
-	resp, err := commToServiceBroker("GET", "/v2/catalog", nil, nil)
+	header := make(map[string]string)
+	header["Content-Type"] = "application/json"
+	header["Authorization"] = basicAuthStr(sb.AuthName, sb.AuthPass)
+
+	resp, err := commToServiceBroker("GET", sb.Url+"/v2/catalog", nil, header)
 	if err != nil {
 		log.Error(err)
-		http.Error(rw, "server internal error", http.StatusInternalServerError)
+		http.Error(rw, "server internal error:"+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer resp.Body.Close()
@@ -56,11 +60,12 @@ func ServiceBrokerPostHandler(rw http.ResponseWriter, req *http.Request, ps http
 
 	catalog := ds.Catalog{}
 
+	log.Infof("%v,%v,%+v", resp.StatusCode, string(body), catalog)
 	err = json.Unmarshal(body, &catalog)
 
 	if err != nil {
 		log.Error(err)
-		http.Error(rw, "server internal error"+err.Error(), http.StatusInternalServerError)
+		http.Error(rw, "server internal error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 

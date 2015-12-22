@@ -28,7 +28,7 @@ func getDB() *sql.DB {
 func commToServiceBroker(method, path string, jsonData []byte, header map[string]string) (resp *http.Response, err error) {
 	//fmt.Println(method, path, string(jsonData))
 
-	req, err := http.NewRequest(strings.ToUpper(method), SERVICE_BROKER_API_SERVER+path, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest(strings.ToUpper(method) /*SERVICE_BROKER_API_SERVER+*/, path, bytes.NewBuffer(jsonData))
 
 	if len(header) > 0 {
 		for key, value := range header {
