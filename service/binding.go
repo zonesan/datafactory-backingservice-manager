@@ -51,7 +51,7 @@ func ServiceBindingsPostHandler(rw http.ResponseWriter, req *http.Request, ps ht
 		Entity: ds.EntitySBind{
 			App_guid:              sbind.App_guid,
 			Service_instance_guid: sbind.Service_instance_guid,
-			Credentials:           *cred,
+			Credentials:           cred,
 			App_url:               "/v2/apps/" + sbind.App_guid,
 			Service_instance_url:  "/v2/user_provided_service_instances/" + sbind.Service_instance_guid,
 		},
@@ -69,7 +69,7 @@ func ServiceBindingsPostHandler(rw http.ResponseWriter, req *http.Request, ps ht
 	return
 }
 
-func dbservicebinding(sb *ds.BackingServiceBinding) (guid, t string, cred *ds.Credential, err error) {
+func dbservicebinding(sb *ds.BackingServiceBinding) (guid, t string, cred /*ds.Credential*/ interface{}, err error) {
 	db := getDB()
 	guid = uuid.NewV4().String()
 	t = time.Now().Format("2006-01-02T15:04:05") //time.Now().Format(time.RFC3339)
@@ -109,7 +109,7 @@ func dbservicebinding(sb *ds.BackingServiceBinding) (guid, t string, cred *ds.Cr
 
 	jsonData, err := json.Marshal(binding)
 	if err != nil {
-		return guid, t, nil, err
+		return guid, t, cred, err
 	}
 
 	header := make(map[string]string)
@@ -119,28 +119,28 @@ func dbservicebinding(sb *ds.BackingServiceBinding) (guid, t string, cred *ds.Cr
 	resp, err := commToServiceBroker("PUT", broker_url+"/v2/service_instances/"+sb.Service_instance_guid+"/service_bindings/"+guid, jsonData, header)
 	if err != nil {
 		log.Error(err)
-		return guid, t, nil, err
+		return guid, t, cred, err
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Error(err)
-		return guid, t, nil, err
+		return guid, t, cred, err
 	}
 
-	cred = &ds.Credential{}
+	//cred = &ds.Credential{}
 
 	if len(body) > 0 {
-		err = json.Unmarshal(body, cred)
+		err = json.Unmarshal(body, &cred)
 
 		if err != nil {
 			log.Error(err)
-			return guid, t, nil, err
+			return guid, t, cred, err
 		}
 	}
 
-	log.Debug(string(body), cred)
+	log.Debugf("################%+v, %+v", string(body), cred)
 
 	if _, err = db.Exec(`INSERT INTO service_bindings
 			(guid,created_at,service_instance_id,app_id,credentials) VALUES(?,?,?,?,?)`,

@@ -68,11 +68,19 @@ type BackingServiceBinding struct {
 	App_guid              string     `json:"app_guid"`
 	Parameters            Parameters `json:"parameters,omitempty"`
 }
+type Credential struct {
+	Uri      string `json:"uri"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Host     string `json:"host"`
+	Port     int    `json:"port"`
+	Database string `json:"database"`
+}
 
 type EntitySBind struct {
 	Service_instance_guid string      `json:"service_instance_guid"`
 	App_guid              string      `json:"app_guid"`
-	Credentials           Credential  `json:"credentials"`
+	Credentials           interface{} `json:"credentials"`
 	Binding_options       interface{} `json:"binding_options"`
 	Gateway_data          interface{} `json:"gateway_data"`
 	Gateway_name          string      `json:"gateway_name"`
@@ -120,20 +128,12 @@ type CreateServiceBindingResponse struct {
 	Credentials interface{} `json:"credentials"`
 }
 
-type Credential struct {
-	Uri      string `json:uri`
-	Username string `json:username`
-	Password string `json:password`
-	Host     string `json:host`
-	Port     int    `json:port`
-	Database string `json:database`
-}
-
 type DashboardClient struct {
 	Id          string `json:"id"`
 	Secret      string `json:"secret"`
 	RedirectUrl string `json:"redirect_uri"`
 }
+
 type Service struct {
 	Name           string   `json:"name"`
 	Id             string   `json:"id"`
