@@ -71,6 +71,18 @@ func ServiceBrokerPostHandler(rw http.ResponseWriter, req *http.Request, ps http
 
 	log.Infof("%v,%+v", string(body), catalog)
 
+	var count int
+
+	err = db.QueryRow("SELECT COUNT(1) FROM service_brokers WHERE broker_url=? OR name=?", sb.Url, sb.Name).Scan(&count)
+	checkSqlErr(err)
+	log.Debug("COUNT=", count)
+
+	if count > 0 {
+		errStr := sb.Url + " or " + sb.Name + " already exist!"
+		http.Error(rw, errStr, http.StatusBadRequest)
+		return
+	}
+
 	if r, err := db.Exec(`INSERT INTO service_brokers(guid,created_at,name,broker_url,auth_password,auth_username)
 			VALUES(?,?,?,?,?,?)`, guid, t, sb.Name, sb.Url, sb.AuthPass, sb.AuthName); err != nil {
 		log.Error("INSERT INTO service_brokers", err)
