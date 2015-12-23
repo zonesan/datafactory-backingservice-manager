@@ -179,8 +179,8 @@ func dbserviceinstance(si *ds.BackingServiceInstance) (guid, t string, err error
 	} else {
 
 		if _, err = db.Exec(`INSERT INTO service_instances
-			(guid,created_at,name,service_plan_id,dashboard_url,tags) VALUES(?,?,?,?,?,?)`,
-			guid, t, si.Name, service_plan_id, svcinstance.DashboardUrl, strings.Join(si.Tags, ", ")); err != nil {
+			(guid,created_at,name,service_plan_id,dashboard_url,tags,space_id) VALUES(?,?,?,?,?,?,?)`,
+			guid, t, si.Name, service_plan_id, svcinstance.DashboardUrl, strings.Join(si.Tags, ", "), 0); err != nil {
 			log.Error("INSERT INTO service_instances error:", err)
 
 		}
