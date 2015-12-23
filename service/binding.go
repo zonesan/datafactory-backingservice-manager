@@ -87,7 +87,7 @@ func dbservicebinding(sb *ds.BackingServiceBinding) (guid, t string, cred /*ds.C
 	)
 	err = db.QueryRow("SELECT id, service_plan_id FROM service_instances WHERE guid=?", sb.Service_instance_guid).Scan(&service_instance_id, &service_plan_id)
 	checkSqlErr(err)
-	log.Debug("service_instance_id %s service_plan_id %s", service_instance_id, service_plan_id)
+	log.Debugf("service_instance_id %s service_plan_id %s", service_instance_id, service_plan_id)
 
 	err = db.QueryRow("SELECT service_id, guid FROM service_plans WHERE id=?", service_plan_id).Scan(&service_id, &service_plan_guid)
 	checkSqlErr(err)
@@ -144,7 +144,8 @@ func dbservicebinding(sb *ds.BackingServiceBinding) (guid, t string, cred /*ds.C
 
 	if _, err = db.Exec(`INSERT INTO service_bindings
 			(guid,created_at,service_instance_id,app_id,credentials) VALUES(?,?,?,?,?)`,
-		guid, t, service_instance_id, 0 /* TODO APP_ID MUST BE SELECT FROM APP TABLE.sb.App_guid */, string(body)); err != nil {
+		guid, t, service_instance_id, 0, string(body)); err != nil {
+		/* TODO APP_ID MUST BE SELECT FROM APP TABLE.sb.App_guid */
 		log.Error("INSERT INTO service_bindings error:", err)
 
 	}
