@@ -133,10 +133,11 @@ func dbservicebroker(catalog ds.Catalog, service_broker_id int64) (err error) {
 		} else {
 			service_id, err := r.LastInsertId()
 			for _, plan := range s.Plans {
+				meta, _ := json.Marshal(plan.Metadata)
 				if _, err = db.Exec(`INSERT INTO service_plans
-						(guid,name,description,free,service_id,unique_id)
-						VALUES(?,?,?,?,?,?)`,
-					plan.Id, plan.Name, plan.Description, plan.Free, service_id, plan.Id); err != nil {
+						(guid,name,description,free,service_id,unique_id,extra)
+						VALUES(?,?,?,?,?,?,?)`,
+					plan.Id, plan.Name, plan.Description, plan.Free, service_id, plan.Id, string(meta)); err != nil {
 					log.Error("INSERT INTO service_plans", err)
 				}
 			}

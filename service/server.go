@@ -36,6 +36,8 @@ func Server() {
 	router.POST("/v2/service_instances", ServiceInstancesPostHandler)
 	router.POST("/v2/service_bindings", ServiceBindingsPostHandler)
 
+	router.GET("/v2/service_plans", ServicePlansGetHandler)
+
 	router.NotFound = &mux{}
 	//router.MethodNotAllowed = &mux{}
 

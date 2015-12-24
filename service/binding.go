@@ -143,13 +143,13 @@ func dbservicebinding(sb *ds.BackingServiceBinding) (guid, t string, cred /*ds.C
 	log.Debugf("%+v, %+v", string(body), cred)
 
 	if _, err = db.Exec(`INSERT INTO service_bindings
-			(guid,created_at,service_instance_id,app_id,credentials) VALUES(?,?,?,?,?)`,
-		guid, t, service_instance_id, 0, string(body)); err != nil {
+			(guid,created_at,service_instance_id,app_guid,credentials) VALUES(?,?,?,?,?)`,
+		guid, t, service_instance_id, sb.App_guid, string(body)); err != nil {
 		/* TODO APP_ID MUST BE SELECT FROM APP TABLE.sb.App_guid */
 		log.Error("INSERT INTO service_bindings error:", err)
 
 	}
-	log.Warn("/* TODO APP_ID MUST BE SELECT FROM APP TABLE. sb.App_guid */")
+	log.Warn("/* FIXED? APP_ID INSTEADED BY APP_GUID, IT SHOULD SELECT FROM APP TABLE.  */")
 	return guid, t, cred, nil
 }
 

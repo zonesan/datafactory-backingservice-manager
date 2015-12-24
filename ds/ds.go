@@ -189,3 +189,25 @@ type SBServiceInstance struct {
 	//Incomplete       bool        `json:"accepts_incomplete, omitempty"`
 	Parameters interface{} `json:"parameters, omitempty"`
 }
+
+type ServicePlans struct {
+	TotalResult int         `json:"total_results"`
+	TotalPages  int         `json:"total_pages"`
+	PrevUrl     interface{} `json:"prev_url"`
+	NextUrl     interface{} `json:"next_url"`
+	Resources   []Response  `json:"resources"`
+}
+
+type EntityPlan struct {
+	Guid        string      `json:"guid"`
+	Name        string      `json:"name"`
+	Free        bool        `json:"free"`
+	Description string      `json:"description"`
+	ServiceID   string      `json:"service_guid"`
+	Extra       interface{} `json:"extra"`
+	UniqueID    string      `json:"unique_id"`
+	Public      bool        `json:"public"`
+	Active      bool        `json:"active"`
+	ServiceUrl  string      `json:"service_url"`
+	InstanceUrl string      `json:"service_instances_url"`
+}
