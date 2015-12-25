@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/asiainfoLDP/datafactory-backingservice-manager/ds"
 	log "github.com/asiainfoLDP/datahub/utils/clog"
 	"github.com/julienschmidt/httprouter"
@@ -89,6 +90,18 @@ func dbservicebinding(sb *ds.BackingServiceBinding) (guid, t string, cred /*ds.C
 	checkSqlErr(err)
 	log.Debugf("service_instance_id %s service_plan_id %s", service_instance_id, service_plan_id)
 
+	var count int
+	err = db.QueryRow("SELECT COUNT(1) FROM service_bindings WHERE app_guid=? AND service_instance_id=?", sb.App_guid, service_instance_id).Scan(&count)
+	checkSqlErr(err)
+	log.Debug("COUNT=", count)
+
+	if count > 0 {
+		errStr := "APP " + sb.App_guid + " is already binded to INSTANCE " + sb.Service_instance_guid
+		log.Error(errStr)
+
+		return guid, t, cred, errors.New(errStr)
+	}
+
 	err = db.QueryRow("SELECT service_id, guid FROM service_plans WHERE id=?", service_plan_id).Scan(&service_id, &service_plan_guid)
 	checkSqlErr(err)
 	log.Debugf("service_id %s service_plan_guid %s", service_id, service_plan_guid)
@@ -150,7 +163,7 @@ func dbservicebinding(sb *ds.BackingServiceBinding) (guid, t string, cred /*ds.C
 
 	}
 	log.Warn("/* FIXED? APP_ID INSTEADED BY APP_GUID, IT SHOULD SELECT FROM APP TABLE.  */")
-	return guid, t, cred, nil
+	return guid, t, cred, err
 }
 
 /*
